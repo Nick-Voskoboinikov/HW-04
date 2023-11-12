@@ -1,0 +1,173 @@
+<?php
+
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use Monolog\Formatter\HtmlFormatter;
+
+if(isset($_SESSION["isauth"])){header('Location: /');}
+$strUsername = $strUsernameErr = $strPassword = $strPasswordErr ='';
+
+// if(isset($_SESSION['id'])){
+// }
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if(isset($_POST['token'])){
+        
+        if($_POST['token'] == $_SESSION['CSRF']) {
+            if((isset($_POST['username']))&& (isset($_POST['password']))) {
+
+                if (empty($_POST['username'])) {
+                    $strUsernameErr = 'Username is required';
+                } else {
+                    $strUsername = test_input($_POST['username']);
+                }
+
+                if (empty($_POST['password'])) {  // let the user dance on the teeth of a rake
+                    $strPasswordErr = 'Your password cannot be empty';
+                }
+
+                if( (!$strUsernameErr) && (!$strPasswordErr) ){
+
+                    $strUsername=htmlspecialchars(strip_tags($_POST['username']), ENT_QUOTES);
+                    $userExists = App\data\DB::getUserByLogin($strUsername);
+                    
+                    if($userExists) {
+                        $strPassword=htmlspecialchars(strip_tags($_POST["password"]), ENT_QUOTES);
+                        $strPassword=\App\core\Controller::seasonWithSalt($strPassword);
+                        if ( $strPassword == $userExists['password'] ) {
+                            $_SESSION["isauth"] = true;
+                            $_SESSION['username']=$userExists['username'];
+                            $_SESSION['email']=$userExists['email'];
+                            $_SESSION['created']=$userExists['created'];
+                            $_SESSION['role']=$userExists['role'];
+
+                            if( isset($_POST['rememberme']) ){
+                                $strHash=\App\core\Controller::seasonWithSalt($_POST['token']);
+                                $strSuccesResult = App\data\DB::updateHash($userExists['id'],$strHash);
+                                setcookie("hash", $strHash, time()+60*60*24*30*6, "/", null, null, true); // http , ~half a year
+                            }
+                            if($_SESSION['role'] == 5){
+                                header('Location: /admin/');
+                            } else {
+                                echo '<script>swal("🎉 Huraah! 🎉", "You\'ve been logged in successfully.", "success").then(() => {location.href=\'/\';});</script>';
+                            }
+                        } else {
+                            $strPasswordErr = "Double-check your password. ";
+                        }
+                        $strPassword=''; // We don't want client to see what'sretrieved from DB & postprocessed after unsuccessfull attempt
+                    }
+                    } else {
+                        $strPasswordErr = "Your log in attempt failed.";
+                    }
+
+            } // (isset($_POST["login"])) && (isset($_POST["pass"]))
+        } else {
+            echo 'Cross-site request forgery detected';
+        }
+    } else {// (isset($_POST['token']))
+        echo 'Cross-site request forgery detected';
+    }// (isset($_POST['token']))
+} else {
+    // $_SERVER["REQUEST_METHOD"] != "POST"
+
+    if(isset($_COOKIE['hash'])){
+        $strUsername = App\data\DB::getUserByHash(htmlspecialchars(strip_tags($_COOKIE['hash']), ENT_QUOTES));
+        if(count($strUsername)!=0){
+            $strUsername = $strUsername['username'];
+        } else {
+            $strUsername = '';
+        }
+    }
+    $strToken = \App\core\Controller::seasonWithSalt(random_int(0,999999));
+    $_SESSION['CSRF'] = $strToken;
+
+
+    // vk auth
+$clientId     = '1111111'; // ID приложения
+$clientSecret = 'mysecret'; // Защищённый ключ
+$redirectUri  = 'http://localhost:8000/admin/login/'; // Адрес, на который будет переадресован пользователь после прохождения авторизации
+ 
+$params = array(
+	'client_id'     => $clientId,
+	'redirect_uri'  => $redirectUri,
+	'response_type' => 'code',
+	'v'             => '5.131',
+	'scope'         => 'email,offline,photos',
+);
+}
+if($_SERVER['REQUEST_METHOD'] == 'GET'){
+    if(isset($_GET['code'])){
+
+        $params = array(
+            'client_id'     => $clientId,
+            'client_secret' => $clientSecret,
+            'code'          => $_GET['code'],
+            'redirect_uri'  => $redirectUri
+        );
+     
+        if (!$content = @file_get_contents('https://oauth.vk.com/access_token?' . http_build_query($params))) {
+            $error = error_get_last();
+            throw new Exception('HTTP request failed. Error: ' . $error['message']);
+        }
+     
+        $response = json_decode($content);
+     
+        // Если при получении токена произошла ошибка
+        if (isset($response->error)) {
+            throw new Exception('При получении токена произошла ошибка. Error: ' . $response->error . '. Error description: ' . $response->error_description);
+        }
+     //А вот здесь выполняем код, если все прошло хорошо
+        $token = $response->access_token; // Токен
+        $expiresIn = $response->expires_in; // Время жизни токена
+        $userId = $response->user_id; // ID авторизовавшегося пользователя
+     
+        // Сохраняем токен в сессии
+        $_SESSION['token'] = $token;
+
+    }
+}
+
+function test_input($data) {
+    $data = trim($data);
+    $data = stripslashes($data);
+    $data = htmlspecialchars($data);
+    return $data;
+  }
+
+?>
+<form  method="post" action="<?php echo str_replace('/index.php','', htmlspecialchars($_SERVER["PHP_SELF"]) );?>" autocomplete="off" >
+    <h1 class="title">Log into your account</h1>
+        <fieldset><legend>Log into your account here</legend>
+
+        <div class="input-group">
+            <input type="text" name="username" id="username" required placeholder=" " value="<?=$strUsername;?>">
+            <label for="username">Login *</label>
+        <span class="error"><?php echo $strUsernameErr;?></span>
+        </div>
+
+    <div class="input-group">
+        <input type="password" name="password" id="password" placeholder=" " value="<?=$strPassword;?>" required >
+        <label for="password">Password *</label>
+        <span class="error"><?=$strPasswordErr;?></span>
+    </div>
+
+    <? if(isset($strToken)){ echo '<input type="hidden" name="token" value="'.$strToken.'" >'; } ?>
+
+    <div>
+        <label for="rememberme">Remember me?&nbsp;<input type="checkbox" name="rememberme" id="rememberme" <?=(isset($_COOKIE['hash']))?'checked':'' ?>></label>
+    </div>
+    
+
+    <br><input type="submit" value="Log in">
+    <br><input type="button" value="Авторизоваться через VK" onclick="location.href='http://oauth.vk.com/authorize?<?=http_build_query( $params ); ?>';" >
+</fieldset>
+</form>
+        <div class="link">
+            No account yet? <a href="/admin/add">Sign up</a>
+        </div>
+
+        <?
+        echo '<pre>';
+            var_dump($_GET);
+        echo '</pre>'; ?>
+

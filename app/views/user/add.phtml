@@ -1,0 +1,56 @@
+<h1>
+    Add users
+</h1>
+
+<form action="/admin/create" method="post">
+    <fieldset>
+        <legend>Create a new user</legend>
+    <div class="input-group">
+        <input type="text" name="username" id="username" required placeholder=" ">
+        <label for="username">Login *</label>
+        <span class="error"><? if(isset($_SESSION['userExists'])){
+            echo 'A user with such a login does already exist.<br>Please plot a new name!';
+            unset($_SESSION['userExists']);
+            } ?></span>
+    </div>
+    <div class="input-group">
+        <input type="password" name="password" id="password" placeholder=" " required >
+        <label for="password">Password *</label>
+    </div>
+    <div class="input-group">
+        <input type="password" id="r_password" placeholder=" ">
+        <label for="r_password">Repeat password *</label>
+        <span class="password-error"></span>
+    </div>
+    <div class="input-group">
+        <input type="email" name="email" id="email" placeholder=" ">
+        <label for="email">E-mail address</label>
+    </div>
+    <div >
+        <label for="isAdmin">Is this user an Administrator group account&nbsp;<input type="checkbox" name="isAdmin" id="isAdmin" 
+        <? 
+         if(!(bool)(\App\data\DB::getAdminsNum())){
+            echo 'checked disabled title="Your created user will be admin entitled by the status of the first user in the system"';
+        }else{
+            echo 'unchecked';
+         } ?> ></label>
+    </div>
+
+        <button type="submit">Create</button>
+    </fieldset>
+</form>
+<script>
+document.querySelector('form').addEventListener('submit',(event)=>{
+    event.preventDefault();
+    let pass1 = document.querySelector('#password');
+    let pass2 = document.querySelector('#r_password');
+    if (pass1.value != pass2.value) {
+        pass1.style.borderColor = "#ff0000";
+        pass2.style.borderColor = "#ff0000";
+        document.querySelector('.password-error').innerHTML='Your typed passwords missmatch';
+    } else {
+        document.querySelector('form').submit();
+    }
+        
+    });
+</script>

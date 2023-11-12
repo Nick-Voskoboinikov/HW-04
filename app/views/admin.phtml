@@ -1,0 +1,14 @@
+<?php
+
+if($_SESSION['role'] < 1){ header('Location: /admin/login'); }
+?>
+<div class="admin">
+    <h1>
+        Admin panel
+    </h1>
+
+        <a href="/admin/logout">Log me out</a><br>
+    <? if($_SESSION['role'] == 5): ?>
+        <a href="/admin/add">Add user</a><br>
+    <?php endif; ?>
+</div>

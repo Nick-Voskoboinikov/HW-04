@@ -1,0 +1,43 @@
+<?php
+
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use Monolog\Formatter\HtmlFormatter;
+
+$log = new Logger('mylogger');
+$log->pushHandler(new StreamHandler(dirname(__DIR__, 2).DIRECTORY_SEPARATOR.'extras'.DIRECTORY_SEPARATOR.'log.txt', Logger::INFO));
+if($_SERVER['REQUEST_METHOD'] == 'POST'){
+    $strTheFile=dirname(__DIR__, 2).DIRECTORY_SEPARATOR.'extras'.DIRECTORY_SEPARATOR.'messages.txt';
+    if(isset($_POST['del'])){
+        unlink($strTheFile);
+    }
+    if(isset($_POST['sbmt'])){
+        if(!file_exists($strTheFile)){
+            $log->warning('WARNING: А файлика-то нет!');
+            file_put_contents($strTheFile,'');
+        }
+            $fh = fopen($strTheFile, 'a');
+            fwrite($fh, $_POST['textareawlogs']);
+            fclose($fh);
+    }
+}
+?>
+<h1>Logs</h1>
+<div class="logger-desc" >
+<!--<p>Создайте файл log.txt. На страницу добавить форму с textarea.
+    По нажатию на кнопку необходимо сохранить сообщение из textarea в заранее созданный файл messages.txt.
+    Предусмотрите проверку на существование messages.txt, и если файл отсутствует — нужно записать сообщение об этом.
+    Удалите messages.txt и проверьте, что в лог попало сообщение о нештатной ситуации.</p>-->
+
+    <form method="POST">
+        <textarea name="textareawlogs" id="textareaWlogs" cols="30" rows="50">
+<? include_once dirname(__DIR__, 2).DIRECTORY_SEPARATOR.'extras'.DIRECTORY_SEPARATOR.'log.txt'; ?>
+        </textarea>
+        <input type="submit" name="sbmt" value="Button">
+    </form><form method="POST"><input type="submit" name="del" value="Remove messages.txt"></form>
+</div>
+<script defer>
+const textareaWlogs=document.querySelector('#textareaWlogs');
+textareaWlogs.style.height = "1px";
+textareaWlogs.style.height = (3+textareaWlogs.scrollHeight)+"px";
+</script>

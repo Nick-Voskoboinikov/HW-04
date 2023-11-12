@@ -1,0 +1,7 @@
+<?php
+
+session_destroy();
+echo '<script>swal("👋 See ya again! 🙋‍♂️", "You\'ve been logged out successfully.", "success").then(() => {location.href=\'/\';});</script>
+<h1>You\'ve been logged out!</h1>';
+
+$_SESSION['role']=0;  // User gets guest rights now

@@ -1,0 +1,22 @@
+{
+    "name": "root/php_mvc_w_db",
+    "description": "PHP MVC with a redbean DB",
+    "type": "project",
+    "require": {
+        "gabordemooij/redbean": "^5.7",
+        "monolog/monolog": "^2.9"
+    },
+    "license": "BSD",
+    "autoload": {
+        "psr-4": {
+            "App\\": "app\\"
+        }
+    },
+    "authors": [
+        {
+            "name": "Nick-Voskoboinikov",
+            "email": "Nick@Voskoboinikov.com"
+        }
+    ],
+    "minimum-stability": "stable"
+}

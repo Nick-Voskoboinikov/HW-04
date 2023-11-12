@@ -1,0 +1,7 @@
+[2023-11-12T11:36:18.103469+03:00] mylogger.WARNING: A warning [] []
+[2023-11-12T11:36:18.104566+03:00] mylogger.ERROR: Exception [] []
+[2023-11-12T11:36:20.595276+03:00] mylogger.WARNING: A warning [] []
+[2023-11-12T11:36:20.598120+03:00] mylogger.ERROR: Exception [] []
+[2023-11-12T11:37:05.376543+03:00] mylogger.WARNING: A warning [] []
+[2023-11-12T11:37:05.378982+03:00] mylogger.ERROR: Exception [] []
+[2023-11-12T11:37:05.379093+03:00] mylogger.ALERT: Just a test [] []

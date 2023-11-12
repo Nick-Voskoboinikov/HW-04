@@ -1,0 +1,64 @@
+<?php
+session_start();
+
+if(!isset($_SESSION['isauth'])) { header('Location: /admin/login'); }
+?>
+<div class="roles">
+    <h1>
+        roles
+    </h1>
+
+    <style>
+table {
+  width: 100%;
+}
+table, th, td {
+  border: 1px solid;
+  border-collapse: separate;
+}
+tr:nth-child(2n+3){
+background-color: #f2f2f2;
+}
+tr:hover {
+background-color: #ddd;
+}
+th, td {
+text-align: center;
+}
+table>tbody>tr>th:first-of-type,table>tbody>tr>th:first-of-type{
+text-align: left;
+}
+table>tbody>tr:nth-child(2)>th,table>tbody>tr:nth-child(2)>th{
+text-align: center;
+}
+</style>
+
+
+<form onsubmit="event.preventDefault();">
+<fieldset><legend>Roles & permissions:</legend>
+<table borders="all">
+<tbody>
+<tr><th rowspan="2" >Role:</th>
+<th colspan="3">Permissions</th></tr><tr>
+<th>View:</th><th>Edit</th><th>Delete</th></tr>
+<tr><th>Admin</th><td>
+<input type="checkbox" name="adminview" checked inert <?=($_SESSION['role']<5)?'disabled class="disabled"':''?>></td><td>
+<input type="checkbox" name="adminedit" checked inert <?=($_SESSION['role']<5)?'disabled class="disabled"':''?>></td><td>
+<input type="checkbox" name="admindelete" checked inert <?=($_SESSION['role']<5)?'disabled class="disabled"':''?>></td></tr>
+<tr><th>User</th><td>
+<input type="checkbox" name="userview" checked <?=($_SESSION['role']<5)?'disabled class="disabled"':''?>></td><td>
+<input type="checkbox" name="useredit" checked <?=($_SESSION['role']<5)?'disabled class="disabled"':''?>></td><td>
+<input type="checkbox" name="userdelete" unchecked <?=($_SESSION['role']<5)?'disabled class="disabled"':''?>></td></tr>
+<tr><th>Guest</th><td>
+<input type="checkbox" name="guestview" checked <?=($_SESSION['role']<5)?'disabled class="disabled"':''?>></td><td>
+<input type="checkbox" name="guestedit" unchecked <?=($_SESSION['role']<5)?'disabled class="disabled"':''?>></td><td>
+<input type="checkbox" name="guestdelete" unchecked <?=($_SESSION['role']<5)?'disabled class="disabled"':''?>></td></tr>
+</tbody>
+</table>
+</fieldset>
+<?=($_SESSION['role']<5)?'':'<input type="reset" />'?>
+
+<input type="submit" value="Save" <?=($_SESSION['role']<5)?'disabled':'onclick="event.preventDefault();alert(\'Добро пожаловать!\');"'?>/>
+
+</form>
+</div>
