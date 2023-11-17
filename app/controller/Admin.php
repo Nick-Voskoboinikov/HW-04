@@ -20,12 +20,13 @@ class Admin extends Controller{
     public function login() {
         $this->view->generate('user'.DIRECTORY_SEPARATOR.'login.phtml','layout.phtml');
     }
-    public function loginvk() {
-        $this->view->generate('user'.DIRECTORY_SEPARATOR.'loginvk.phtml','layout.phtml');
-    }
     public function logout() {
         $this->view->generate('user'.DIRECTORY_SEPARATOR.'logout.phtml','layout.phtml');
     }
+    public function vkcontent() {
+        $this->view->generate('user'.DIRECTORY_SEPARATOR.'vkcontent.phtml','layout.phtml');
+    }
+    
     public function create() {
         
         if(!isset($_POST) || $_SERVER['REQUEST_METHOD'] !== 'POST'){

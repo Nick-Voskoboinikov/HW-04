@@ -4,6 +4,9 @@ use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Monolog\Formatter\HtmlFormatter;
 
+$objAuthLog = new Logger('authlogger');
+$objAuthLog->pushHandler(new StreamHandler(dirname(__DIR__, 2).DIRECTORY_SEPARATOR.'extras'.DIRECTORY_SEPARATOR.'authlog.txt', Logger::INFO));
+
 if(isset($_SESSION["isauth"])){header('Location: /');}
 $strUsername = $strUsernameErr = $strPassword = $strPasswordErr ='';
 
@@ -18,12 +21,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 if (empty($_POST['username'])) {
                     $strUsernameErr = 'Username is required';
+                    $objAuthLog->warning('WARNING: Username is required');
                 } else {
                     $strUsername = test_input($_POST['username']);
                 }
 
                 if (empty($_POST['password'])) {  // let the user dance on the teeth of a rake
                     $strPasswordErr = 'Your password cannot be empty';
+                    $objAuthLog->warning('WARNING: Password cannot be empty');
                 }
 
                 if( (!$strUsernameErr) && (!$strPasswordErr) ){
@@ -53,19 +58,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             }
                         } else {
                             $strPasswordErr = "Double-check your password. ";
+                            $objAuthLog->warning('WARNING: Smth wrong with a password');
                         }
                         $strPassword=''; // We don't want client to see what'sretrieved from DB & postprocessed after unsuccessfull attempt
                     }
-                    } else {
+                    } else { // if( ($strUsernameErr) || ($strPasswordErr) )
                         $strPasswordErr = "Your log in attempt failed.";
+                        $objAuthLog->warning('WARNING: Username or pasword error at log in attempt');
                     }
 
             } // (isset($_POST["login"])) && (isset($_POST["pass"]))
         } else {
-            echo 'Cross-site request forgery detected';
+            $objAuthLog->warning('WARNING: Cross-site request forgery detected');
         }
     } else {// (isset($_POST['token']))
-        echo 'Cross-site request forgery detected';
+        $objAuthLog->warning('WARNING: Cross-site request forgery detected');
     }// (isset($_POST['token']))
 } else {
     // $_SERVER["REQUEST_METHOD"] != "POST"
@@ -84,30 +91,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // vk auth
 $clientId     = '1111111'; // ID приложения
-$clientSecret = 'mysecret'; // Защищённый ключ
-$redirectUri  = 'http://localhost:8000/admin/login/'; // Адрес, на который будет переадресован пользователь после прохождения авторизации
+$clientSecret = 'Ksguu4CNsKgbJrFJhehe'; // Защищённый ключ
+$redirectUri  = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')?"https://":"http://".$_SERVER['HTTP_HOST']).$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']; // Адрес, на который будет переадресован пользователь после прохождения авторизации
  
 $params = array(
 	'client_id'     => $clientId,
 	'redirect_uri'  => $redirectUri,
 	'response_type' => 'code',
 	'v'             => '5.131',
-	'scope'         => 'email,offline,photos',
+	'scope'         => 'email',
 );
 }
 if($_SERVER['REQUEST_METHOD'] == 'GET'){
     if(isset($_GET['code'])){
+   // if(strstr($_SERVER['QUERY_STRING'], 'code=')){     // might be dependent on MVC design
 
         $params = array(
             'client_id'     => $clientId,
             'client_secret' => $clientSecret,
             'code'          => $_GET['code'],
+            // 'code'          => explode('code=',$_SERVER['QUERY_STRING'])[1],     // approach might be dependent on MVC design
             'redirect_uri'  => $redirectUri
         );
      
         if (!$content = @file_get_contents('https://oauth.vk.com/access_token?' . http_build_query($params))) {
             $error = error_get_last();
             throw new Exception('HTTP request failed. Error: ' . $error['message']);
+            $objAuthLog->warning('WARNING: HTTP request failed. Error: ' . $error['message']);
         }
      
         $response = json_decode($content);
@@ -115,17 +125,34 @@ if($_SERVER['REQUEST_METHOD'] == 'GET'){
         // Если при получении токена произошла ошибка
         if (isset($response->error)) {
             throw new Exception('При получении токена произошла ошибка. Error: ' . $response->error . '. Error description: ' . $response->error_description);
+            $objAuthLog->warning('WARNING: При получении токена произошла ошибка. Error: ' . $response->error . '. Error description: ' . $response->error_description);
         }
      //А вот здесь выполняем код, если все прошло хорошо
         $token = $response->access_token; // Токен
         $expiresIn = $response->expires_in; // Время жизни токена
         $userId = $response->user_id; // ID авторизовавшегося пользователя
+        $strUserEmail = $response->email; // authenticated user email address
      
+        $strVkUserExists = App\data\DB::getUserByEmail($strUsername);
+                    
+        if($strVkUserExists) {
         // Сохраняем токен в сессии
-        $_SESSION['token'] = $token;
+        $_SESSION['vktoken'] = $token;
+        $_SESSION["isauth"] = true;
+        $_SESSION['username']=$strVkUserExists['username'];
+        $_SESSION['email']=$strVkUserExists['email'];
+        $_SESSION['created']=$strVkUserExists['created'];
+        $_SESSION['role']=$strVkUserExists['role'];
+
+echo '<script>swal("🎉 Huraah! 🎉", "You\'ve been logged in as a VK user successfully.", "success").then(() => {location.href=\'/admin/vkcontent\';});</script>';
+
+            } else { // if(! $strVkUserExists)
+                $strPasswordErr = 'VK auth failed!';
+                $objAuthLog->warning('WARNING: No vk user with such email address has been registered!'); // frankfull error message
+            }
+        }
 
     }
-}
 
 function test_input($data) {
     $data = trim($data);
@@ -165,9 +192,4 @@ function test_input($data) {
         <div class="link">
             No account yet? <a href="/admin/add">Sign up</a>
         </div>
-
-        <?
-        echo '<pre>';
-            var_dump($_GET);
-        echo '</pre>'; ?>
 
